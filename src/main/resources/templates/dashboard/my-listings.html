@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моите обяви | ParkNet</title>
+    <link rel="stylesheet" th:href="@{/vendor/leaflet/leaflet.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="page">
+    <section class="section-heading">
+        <div>
+            <p class="eyebrow">Собственик</p>
+            <h1>Моите обяви</h1>
+        </div>
+        <a class="primary-action" th:href="@{/listings/new}">Нова обява</a>
+    </section>
+
+    <div class="alert success" th:if="${listingSuccess}" th:text="${listingSuccess}"></div>
+    <div class="alert error" th:if="${listingError}" th:text="${listingError}"></div>
+
+    <section class="map-workspace owner-map-workspace" th:if="${!#lists.isEmpty(listingMapPoints)}">
+        <div class="map-shell owner-map-shell">
+            <div id="owner-listings-map" class="sofia-map" aria-label="Карта на моите обяви"></div>
+        </div>
+
+        <aside class="map-results-panel owner-map-panel">
+            <div class="map-results-header">
+                <div>
+                    <p class="eyebrow">Управление</p>
+                    <h2 th:text="${#lists.size(listings)} + ' мои места'">0 мои места</h2>
+                </div>
+                <div class="map-legend owner-map-legend" aria-label="Легенда на картата">
+                    <span><i class="legend-dot legend-dot-available"></i>Свободно</span>
+                    <span><i class="legend-dot legend-dot-requested"></i>Заявка</span>
+                    <span><i class="legend-dot legend-dot-booked"></i>Заето</span>
+                    <span><i class="legend-dot legend-dot-unavailable"></i>По-късно</span>
+                    <span><i class="legend-dot legend-dot-inactive"></i>Неактивна</span>
+                </div>
+            </div>
+
+            <div class="map-result-list owner-result-list">
+                <article class="map-result-card owner-listing-card"
+                         th:each="point : ${listingMapPoints}"
+                         th:attr="data-listing-id=${point.id}">
+                    <div class="map-result-topline">
+                        <span class="status-dot" th:style="'background: ' + ${point.color}"></span>
+                        <span th:text="${point.statusLabel}">Свободно</span>
+                        <strong th:text="${point.displayRateLabel}">0€</strong>
+                    </div>
+                    <h3>
+                        <a th:href="${point.editUrl}" th:text="${point.title}">Заглавие</a>
+                    </h3>
+                    <p th:text="${point.address}">Адрес</p>
+                    <div class="date-row">
+                        <span th:text="${point.districtName}">Квартал</span>
+                        <span>
+                            <span th:text="${point.availableFrom}">2026-05-01</span>
+                            <span> - </span>
+                            <span th:text="${point.availableTo}">2026-05-05</span>
+                        </span>
+                    </div>
+                    <div class="listing-actions">
+                        <a th:href="${point.editUrl}">Редактирай</a>
+                        <a th:if="${point.colorCategory != 'inactive'}" th:href="${point.detailsUrl}">Преглед</a>
+                        <form th:if="${point.colorCategory != 'inactive'}" th:action="@{/listings/{id}/delete(id=${point.id})}" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit">Деактивирай</button>
+                        </form>
+                    </div>
+                </article>
+            </div>
+        </aside>
+    </section>
+
+    <section class="empty-state" th:if="${#lists.isEmpty(listings)}">
+        <h2>Все още нямаш обяви</h2>
+        <p>Публикувай първото си място и го направи видимо за хората, които търсят паркинг в София.</p>
+        <a th:href="@{/listings/new}">Публикувай обява</a>
+    </section>
+</main>
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
+<script th:inline="javascript">
+    const listingPoints = /*[[${listingMapPoints}]]*/ [];
+    const sofiaCenter = [42.6977, 23.3219];
+    const sofiaBounds = [[42.55, 23.05], [42.85, 23.65]];
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function initializeOwnerListingsMap() {
+        const mapElement = document.getElementById("owner-listings-map");
+        if (!mapElement || !window.L) {
+            return;
+        }
+
+        const map = L.map(mapElement, {
+            scrollWheelZoom: false,
+            zoomControl: true,
+            maxBounds: L.latLngBounds(sofiaBounds).pad(0.35),
+            maxBoundsViscosity: 0.82
+        }).setView(sofiaCenter, 12);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const bounds = [];
+        const markersById = {};
+
+        listingPoints.forEach((point) => {
+            const latitude = Number(point.centerLatitude);
+            const longitude = Number(point.centerLongitude);
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                return;
+            }
+
+            const popupHtml = `
+                <div class="map-popup">
+                    <strong>${escapeHtml(point.title)}</strong>
+                    <span>${escapeHtml(point.statusLabel)} · ${escapeHtml(point.displayRateLabel)}</span>
+                    <span>${escapeHtml(point.address)}</span>
+                    <a href="${escapeHtml(point.editUrl)}">Редактирай</a>
+                </div>
+            `;
+
+            if (point.geometryGeoJson) {
+                try {
+                    const shape = L.geoJSON(JSON.parse(point.geometryGeoJson), {
+                        style: {
+                            color: point.color,
+                            weight: 2,
+                            fillColor: point.color,
+                            fillOpacity: 0.22
+                        }
+                    }).addTo(map);
+                    shape.bindPopup(popupHtml);
+                    shape.on("click", () => highlightResultCard(point.id));
+                } catch (error) {
+                    // Invalid stored geometry should not block the management map.
+                }
+            }
+
+            const marker = L.marker([latitude, longitude], {
+                icon: L.divIcon({
+                    className: "",
+                    html: `<span class="map-pin map-pin-${escapeHtml(point.colorCategory)}" style="--pin-color: ${escapeHtml(point.color)}"></span>`,
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14],
+                    popupAnchor: [0, -14]
+                })
+            }).addTo(map);
+
+            marker.bindPopup(popupHtml);
+
+            marker.on("click", () => {
+                highlightResultCard(point.id);
+            });
+
+            bounds.push([latitude, longitude]);
+            markersById[point.id] = marker;
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, {padding: [34, 34], maxZoom: 14});
+        }
+
+        document.querySelectorAll("[data-listing-id]").forEach((card) => {
+            card.addEventListener("mouseenter", () => {
+                const marker = markersById[card.dataset.listingId];
+                if (marker) {
+                    map.panTo(marker.getLatLng(), {animate: true, duration: 0.35});
+                    marker.openPopup();
+                }
+            });
+        });
+
+        function highlightResultCard(listingId) {
+            const card = document.querySelector(`[data-listing-id="${listingId}"]`);
+            if (card) {
+                card.scrollIntoView({block: "nearest", behavior: "smooth"});
+                card.classList.add("is-highlighted");
+                setTimeout(() => card.classList.remove("is-highlighted"), 900);
+            }
+        }
+    }
+
+    initializeOwnerListingsMap();
+</script>
+</body>
+</html>

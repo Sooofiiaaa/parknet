@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Грешка | ParkNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="page narrow-page">
+    <section class="empty-state">
+        <h1>Възникна грешка</h1>
+        <p>Страницата не е налична или заявката не може да бъде обработена.</p>
+        <a th:href="@{/}">Към началото</a>
+    </section>
+</main>
+</body>
+</html>

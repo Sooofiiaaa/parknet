@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Residential parking lot">
+  <rect width="960" height="540" fill="#edf4f1"/>
+  <rect y="322" width="960" height="218" fill="#c6d1cc"/>
+  <rect x="64" y="108" width="260" height="230" rx="9" fill="#f8fbfa"/>
+  <rect x="636" y="84" width="260" height="254" rx="9" fill="#f7faf8"/>
+  <g fill="#bdd0c8">
+    <rect x="104" y="150" width="56" height="62" rx="4"/>
+    <rect x="188" y="150" width="56" height="62" rx="4"/>
+    <rect x="676" y="132" width="56" height="62" rx="4"/>
+    <rect x="760" y="132" width="56" height="62" rx="4"/>
+  </g>
+  <path d="M198 414h564" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-dasharray="64 44"/>
+  <rect x="282" y="352" width="184" height="106" rx="30" fill="#c58a1d"/>
+  <rect x="500" y="352" width="184" height="106" rx="30" fill="#2f5f8f"/>
+  <circle cx="326" cy="460" r="21" fill="#17201b"/>
+  <circle cx="422" cy="460" r="21" fill="#17201b"/>
+  <circle cx="544" cy="460" r="21" fill="#17201b"/>
+  <circle cx="640" cy="460" r="21" fill="#17201b"/>
+  <rect x="318" y="376" width="112" height="34" rx="10" fill="#fff6dd"/>
+  <rect x="536" y="376" width="112" height="34" rx="10" fill="#e7f1f7"/>
+</svg>

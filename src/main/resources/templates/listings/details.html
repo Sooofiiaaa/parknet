@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${listing.title} + ' | ParkNet'">Обява | ParkNet</title>
+    <link rel="stylesheet" th:href="@{/vendor/leaflet/leaflet.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="page details-page">
+    <section class="details-layout">
+        <article class="details-main">
+            <div class="details-image">
+                <img th:if="${listing.imagePath != null}" th:src="${listing.imagePath}" th:alt="${listing.title}">
+                <div class="image-fallback large" th:unless="${listing.imagePath != null}">ParkNet</div>
+            </div>
+            <div class="details-content">
+                <div class="details-hero-badges">
+                    <span th:text="${listing.district.displayName}">Квартал</span>
+                    <span th:text="${listingMapPoint.statusLabel}">Свободно</span>
+                    <strong><span th:text="${listingMapPoint.displayRateLabel}">2€</span> <small>на час</small></strong>
+                </div>
+                <h1 th:text="${listing.title}">Заглавие</h1>
+                <div class="details-address-block">
+                    <span th:text="${listing.district.displayName}">Квартал</span>
+                    <p class="address" th:text="${listing.address}">Адрес</p>
+                </div>
+                <p class="details-description" th:text="${listing.description}">Описание</p>
+                <dl class="info-list">
+                    <div>
+                        <dt>Квартал</dt>
+                        <dd th:text="${listing.district.displayName}">Квартал</dd>
+                    </div>
+                    <div>
+                        <dt>Статус</dt>
+                        <dd th:text="${listingMapPoint.statusLabel}">Свободно</dd>
+                    </div>
+                    <div>
+                        <dt>Цена на час</dt>
+                        <dd th:text="${listingMapPoint.displayRateLabel}">2€</dd>
+                    </div>
+                    <div>
+                        <dt>Дневна цена</dt>
+                        <dd th:if="${listing.pricePerDay != null}">
+                            <span th:text="${#numbers.formatDecimal(listing.pricePerDay, 1, 2)}">16.00</span>€
+                        </dd>
+                        <dd th:unless="${listing.pricePerDay != null}">По договаряне</dd>
+                    </div>
+                    <div>
+                        <dt>Тип цена</dt>
+                        <dd th:text="${listing.pricingType.displayName}">На час</dd>
+                    </div>
+                    <div>
+                        <dt>Адрес</dt>
+                        <dd th:text="${listing.address}">Адрес</dd>
+                    </div>
+                    <div>
+                        <dt>Налично от</dt>
+                        <dd th:text="${listing.availableFrom}">2026-05-01</dd>
+                    </div>
+                    <div>
+                        <dt>Налично до</dt>
+                        <dd th:text="${listing.availableTo}">2026-05-05</dd>
+                    </div>
+                    <div>
+                        <dt>Контакт</dt>
+                        <dd th:text="${listing.phone}">+359</dd>
+                    </div>
+                    <div>
+                        <dt>Собственик</dt>
+                        <dd th:text="${listing.owner.fullName}">Име</dd>
+                    </div>
+                </dl>
+                <section class="detail-map-card">
+                    <div>
+                        <p class="eyebrow">Карта</p>
+                        <h2>Граници на паркомястото</h2>
+                        <p>Очертанието показва реалната зона за паркиране, а маркерът е центърът на мястото.</p>
+                    </div>
+                    <div id="listing-detail-map" class="detail-map" aria-label="Карта с граници на паркомястото"></div>
+                </section>
+                <a class="secondary-action" th:if="${ownsListing}" th:href="@{/listings/{id}/edit(id=${listing.id})}">Редактирай обявата</a>
+            </div>
+        </article>
+
+        <aside class="side-panel">
+            <div class="alert success" th:if="${reservationSuccess}" th:text="${reservationSuccess}"></div>
+            <div class="alert error" th:if="${reservationError}" th:text="${reservationError}"></div>
+
+            <div class="reservation-card-heading">
+                <p class="eyebrow">Запазване</p>
+                <h2>Заяви резервация</h2>
+                <p>Избери период и изпрати заявка към собственика.</p>
+            </div>
+
+            <dl class="reservation-detail-list">
+                <div>
+                    <dt>Място</dt>
+                    <dd th:text="${listing.title}">Гараж</dd>
+                </div>
+                <div>
+                    <dt>Квартал</dt>
+                    <dd th:text="${listing.district.displayName}">Квартал</dd>
+                </div>
+                <div>
+                    <dt>Цена</dt>
+                    <dd th:text="${listingMapPoint.displayRateLabel}">2€</dd>
+                </div>
+                <div>
+                    <dt>Налично</dt>
+                    <dd>
+                        <span th:text="${listing.availableFrom}">2026-05-01</span>
+                        <span> - </span>
+                        <span th:text="${listing.availableTo}">2026-05-05</span>
+                    </dd>
+                </div>
+            </dl>
+
+            <p class="muted" th:if="${!isAuthenticated}">
+                Влезте в профила си, за да изпратите заявка.
+            </p>
+            <a class="full-width-action" th:if="${!isAuthenticated}" th:href="@{/login}">Вход</a>
+
+            <p class="muted" th:if="${isAuthenticated && ownsListing}">
+                Това е ваша обява.
+            </p>
+
+            <form th:if="${isAuthenticated && !ownsListing}"
+                  th:action="@{/listings/{id}/reserve(id=${listing.id})}"
+                  th:object="${reservationRequest}"
+                  method="post"
+                  class="stacked-form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <label>
+                    <span>От дата</span>
+                    <input type="date" th:field="*{startDate}" th:min="${listing.availableFrom}" th:max="${listing.availableTo}">
+                    <span class="field-error" th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}"></span>
+                </label>
+                <label>
+                    <span>До дата</span>
+                    <input type="date" th:field="*{endDate}" th:min="${listing.availableFrom}" th:max="${listing.availableTo}">
+                    <span class="field-error" th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}"></span>
+                </label>
+                <button type="submit">Изпрати заявка</button>
+                <p class="reservation-note">Собственикът потвърждава заявката преди резервацията да стане активна.</p>
+            </form>
+        </aside>
+    </section>
+</main>
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
+<script th:inline="javascript">
+    const listingPoint = /*[[${listingMapPoint}]]*/ null;
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    if (listingPoint && window.L) {
+        const latitude = Number(listingPoint.centerLatitude);
+        const longitude = Number(listingPoint.centerLongitude);
+        const sofiaBounds = new Array([42.55, 23.05], [42.85, 23.65]);
+        const map = L.map("listing-detail-map", {
+            scrollWheelZoom: false,
+            maxBounds: L.latLngBounds(sofiaBounds).pad(0.35),
+            maxBoundsViscosity: 0.82
+        }).setView([latitude, longitude], 15);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        if (listingPoint.geometryGeoJson) {
+            try {
+                const shape = L.geoJSON(JSON.parse(listingPoint.geometryGeoJson), {
+                    style: {
+                        color: listingPoint.color,
+                        weight: 2,
+                        fillColor: listingPoint.color,
+                        fillOpacity: 0.22
+                    }
+                }).addTo(map);
+                map.fitBounds(shape.getBounds(), {padding: [26, 26], maxZoom: 17});
+            } catch (error) {
+                map.setView([latitude, longitude], 15);
+            }
+        }
+
+        L.marker([latitude, longitude], {
+            icon: L.divIcon({
+                className: "",
+                html: `<span class="map-pin map-pin-${escapeHtml(listingPoint.colorCategory)}" style="--pin-color: ${escapeHtml(listingPoint.color)}"></span>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            })
+        }).addTo(map).bindPopup(escapeHtml(listingPoint.title)).openPopup();
+    }
+</script>
+</body>
+</html>

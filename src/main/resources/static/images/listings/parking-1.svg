@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Covered parking space">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dfeee9"/>
+      <stop offset="1" stop-color="#f7faf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="960" height="540" fill="url(#sky)"/>
+  <rect y="330" width="960" height="210" fill="#cbd8d1"/>
+  <path d="M120 320h720l-68-134H188z" fill="#26362f"/>
+  <rect x="176" y="218" width="608" height="132" rx="10" fill="#f8fbfa"/>
+  <rect x="220" y="250" width="144" height="100" rx="6" fill="#d5e1dc"/>
+  <rect x="408" y="250" width="144" height="100" rx="6" fill="#d5e1dc"/>
+  <rect x="596" y="250" width="144" height="100" rx="6" fill="#d5e1dc"/>
+  <path d="M252 404h456" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-dasharray="92 58"/>
+  <rect x="334" y="292" width="292" height="92" rx="34" fill="#1f7a5b"/>
+  <circle cx="398" cy="384" r="24" fill="#15221c"/>
+  <circle cx="562" cy="384" r="24" fill="#15221c"/>
+  <rect x="376" y="316" width="214" height="34" rx="10" fill="#e9f4f0"/>
+</svg>

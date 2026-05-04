@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav class="navbar" th:fragment="nav">
+    <a class="brand" th:href="@{/}">
+        <span class="parknet-logo brand-logo" aria-hidden="true"></span>
+        <span>ParkNet</span>
+    </a>
+    <div class="nav-links">
+        <a th:href="@{/}">Начало</a>
+        <a th:if="${isAuthenticated}" th:href="@{/listings/new}">Нова обява</a>
+        <a th:if="${isAuthenticated}" th:href="@{/my-listings}">Моите обяви</a>
+        <a th:if="${isAuthenticated}" th:href="@{/my-reservations}">Моите резервации</a>
+        <a th:if="${isAuthenticated}" th:href="@{/reservation-requests}">Заявки</a>
+        <a th:unless="${isAuthenticated}" th:href="@{/login}">Вход</a>
+        <a th:unless="${isAuthenticated}" th:href="@{/register}">Регистрация</a>
+        <form class="logout-form" th:if="${isAuthenticated}" th:action="@{/logout}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit">Изход</button>
+        </form>
+    </div>
+</nav>
+</body>
+</html>

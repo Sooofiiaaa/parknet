@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моите резервации | ParkNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="page">
+    <section class="section-heading">
+        <div>
+            <p class="eyebrow">Наемател</p>
+            <h1>Моите резервации</h1>
+        </div>
+    </section>
+
+    <div class="alert success" th:if="${reservationSuccess}" th:text="${reservationSuccess}"></div>
+    <div class="alert error" th:if="${reservationError}" th:text="${reservationError}"></div>
+
+    <section class="reservation-list" th:if="${!#lists.isEmpty(reservations)}">
+        <article class="reservation-row" th:each="reservation : ${reservations}">
+            <div>
+                <h2>
+                    <a th:href="@{/listings/{id}(id=${reservation.listing.id})}" th:text="${reservation.listing.title}">Обява</a>
+                </h2>
+                <p>
+                    <span th:text="${reservation.startDate}">2026-05-01</span>
+                    <span>до</span>
+                    <span th:text="${reservation.endDate}">2026-05-02</span>
+                </p>
+            </div>
+            <div class="reservation-summary">
+                <span class="status" th:text="${reservation.status.displayName}">Заявена</span>
+                <strong><span th:text="${#numbers.formatDecimal(reservation.totalPrice, 1, 2)}">0.00</span>€</strong>
+                <form th:if="${reservation.status.name() != 'CANCELLED'}"
+                      th:action="@{/reservations/{id}/cancel(id=${reservation.id})}"
+                      method="post"
+                      class="inline-form">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="returnTo" value="/my-reservations">
+                    <button type="submit" class="text-danger-button">Откажи</button>
+                </form>
+            </div>
+        </article>
+    </section>
+
+    <section class="empty-state" th:if="${#lists.isEmpty(reservations)}">
+        <h2>Нямаш резервации</h2>
+        <p>Разгледай активните места и изпрати заявка за удобен период.</p>
+        <a th:href="@{/listings}">Към обявите</a>
+    </section>
+</main>
+</body>
+</html>

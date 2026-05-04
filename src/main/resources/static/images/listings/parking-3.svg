@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Underground garage entrance">
+  <rect width="960" height="540" fill="#e9f1ed"/>
+  <rect y="346" width="960" height="194" fill="#bfcac4"/>
+  <path d="M174 128h612v250H174z" fill="#f8fbfa"/>
+  <rect x="248" y="190" width="464" height="188" rx="14" fill="#24332c"/>
+  <path d="M304 378h352l-72 86H376z" fill="#64736b"/>
+  <path d="M336 424h288" stroke="#e8efe9" stroke-width="9" stroke-linecap="round" stroke-dasharray="48 42"/>
+  <rect x="104" y="296" width="106" height="48" rx="12" fill="#1f7a5b"/>
+  <rect x="750" y="296" width="106" height="48" rx="12" fill="#1f7a5b"/>
+  <rect x="342" y="230" width="276" height="102" rx="36" fill="#aebcb5"/>
+  <circle cx="400" cy="334" r="24" fill="#101713"/>
+  <circle cx="560" cy="334" r="24" fill="#101713"/>
+  <rect x="386" y="256" width="188" height="34" rx="10" fill="#ecf2ef"/>
+</svg>

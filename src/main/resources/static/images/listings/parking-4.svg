@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Street parking space">
+  <rect width="960" height="540" fill="#eef5f2"/>
+  <rect y="276" width="960" height="264" fill="#8e9c95"/>
+  <rect x="0" y="0" width="960" height="276" fill="#dfe8e4"/>
+  <rect x="78" y="78" width="190" height="198" rx="8" fill="#f8fbfa"/>
+  <rect x="336" y="50" width="214" height="226" rx="8" fill="#f7faf8"/>
+  <rect x="620" y="96" width="236" height="180" rx="8" fill="#f8fbfa"/>
+  <path d="M118 372h724" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-dasharray="94 54"/>
+  <path d="M118 474h724" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-dasharray="94 54"/>
+  <rect x="366" y="330" width="228" height="120" rx="34" fill="#1f7a5b"/>
+  <circle cx="414" cy="452" r="24" fill="#17201b"/>
+  <circle cx="546" cy="452" r="24" fill="#17201b"/>
+  <rect x="408" y="356" width="144" height="42" rx="10" fill="#e6f3ee"/>
+  <circle cx="168" cy="242" r="36" fill="#1f7a5b"/>
+  <circle cx="784" cy="242" r="36" fill="#1f7a5b"/>
+</svg>

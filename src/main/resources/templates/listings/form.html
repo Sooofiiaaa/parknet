@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${formTitle} + ' | ParkNet'">Обява | ParkNet</title>
+    <link rel="stylesheet" th:href="@{/vendor/leaflet/leaflet.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="page narrow-page">
+    <section class="form-heading">
+        <p class="eyebrow">Собственик</p>
+        <h1 th:text="${formTitle}">Публикувай гараж или паркомясто</h1>
+        <p th:text="${formIntro}">Попълни данните ясно, за да могат наемателите бързо да преценят дали мястото им върши работа.</p>
+    </section>
+
+    <form th:action="${formAction}" th:object="${listingForm}" method="post" enctype="multipart/form-data" class="stacked-form form-surface">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+        <label>
+            <span>Заглавие</span>
+            <input type="text" th:field="*{title}" placeholder="Подземен гараж до НДК">
+            <span class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
+        </label>
+
+        <label>
+            <span>Описание</span>
+            <textarea rows="5" th:field="*{description}" placeholder="Опиши достъпа, размера и особеностите на мястото."></textarea>
+            <span class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+        </label>
+
+        <div class="two-column">
+            <label>
+                <span>Квартал</span>
+                <select th:field="*{district}">
+                    <option value="">Избери квартал</option>
+                    <option th:each="district : ${districts}"
+                            th:value="${district}"
+                            th:text="${district.displayName}">
+                        Квартал
+                    </option>
+                </select>
+                <span class="field-error" th:if="${#fields.hasErrors('district')}" th:errors="*{district}"></span>
+            </label>
+            <label>
+                <span>Цена на час</span>
+                <input type="number" min="0" step="0.01" th:field="*{pricePerHour}" placeholder="2.00">
+                <small class="field-hint">На картата се вижда само тази цена, например 2€.</small>
+                <input type="hidden" name="pricingType" value="HOURLY">
+                <span class="field-error" th:if="${#fields.hasErrors('pricingType')}" th:errors="*{pricingType}"></span>
+                <span class="field-error" th:if="${#fields.hasErrors('pricePerHour')}" th:errors="*{pricePerHour}"></span>
+            </label>
+        </div>
+
+        <details class="form-extra-details">
+            <summary>Дневна отстъпка и допълнителни детайли</summary>
+            <label>
+                <span>Дневна цена с отстъпка</span>
+                <input type="number" min="0" step="0.01" th:field="*{pricePerDay}" placeholder="16.00">
+                <span class="field-error" th:if="${#fields.hasErrors('pricePerDay')}" th:errors="*{pricePerDay}"></span>
+            </label>
+            <input type="hidden" name="currency" value="€">
+        </details>
+        <span class="field-error" th:if="${#fields.hasErrors('pricingValid')}" th:errors="*{pricingValid}"></span>
+
+        <label>
+            <span>Адрес</span>
+            <input type="text" th:field="*{address}" placeholder="ул. Примерна 12, София">
+            <span class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></span>
+        </label>
+
+        <section class="form-map-section">
+            <div class="form-map-heading">
+                <div>
+                    <p class="eyebrow">Карта</p>
+                    <h2>Точна позиция</h2>
+                </div>
+                <button class="ghost-action" id="use-district-center" type="button">Към квартала</button>
+            </div>
+            <div id="listing-form-map" class="form-map" aria-label="Избор на позиция на обявата върху картата"></div>
+            <input type="hidden" th:field="*{geometryGeoJson}">
+            <input type="hidden" th:field="*{mapColorModeOverride}">
+            <div class="coordinate-preview-row">
+                <span id="coordinate-preview">Картата очаква квартал или точна позиция.</span>
+                <button class="text-button" id="clear-coordinates" type="button">Изчисти точната позиция</button>
+            </div>
+            <div class="two-column manual-coordinate-fields">
+                <label>
+                    <span>Ширина</span>
+                    <input type="number" step="0.000001" th:field="*{latitude}" placeholder="42.697700">
+                    <span class="field-error" th:if="${#fields.hasErrors('latitude')}" th:errors="*{latitude}"></span>
+                </label>
+                <label>
+                    <span>Дължина</span>
+                    <input type="number" step="0.000001" th:field="*{longitude}" placeholder="23.321900">
+                    <span class="field-error" th:if="${#fields.hasErrors('longitude')}" th:errors="*{longitude}"></span>
+                </label>
+            </div>
+            <span class="field-error" th:if="${#fields.hasErrors('coordinatePairValid')}" th:errors="*{coordinatePairValid}"></span>
+            <span class="field-error" th:if="${#fields.hasErrors('geometryGeoJson')}" th:errors="*{geometryGeoJson}"></span>
+        </section>
+
+        <div class="two-column">
+            <label>
+                <span>Налично от</span>
+                <input type="date" th:field="*{availableFrom}">
+                <span class="field-error" th:if="${#fields.hasErrors('availableFrom')}" th:errors="*{availableFrom}"></span>
+            </label>
+            <label>
+                <span>Налично до</span>
+                <input type="date" th:field="*{availableTo}">
+                <span class="field-error" th:if="${#fields.hasErrors('availableTo')}" th:errors="*{availableTo}"></span>
+            </label>
+        </div>
+
+        <label>
+            <span>Телефон за контакт</span>
+            <input type="text" th:field="*{phone}" placeholder="+359 88 123 4567">
+            <span class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></span>
+        </label>
+
+        <label>
+            <span>Снимка</span>
+            <input type="file" th:field="*{imageFile}" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+            <span class="field-hint">JPG, PNG или WEBP до 5MB.</span>
+            <span class="field-error" th:if="${#fields.hasErrors('imageFile')}" th:errors="*{imageFile}"></span>
+        </label>
+
+        <div class="current-image" th:if="${editMode && listing.imagePath != null}">
+            <span>Текуща снимка</span>
+            <img th:src="${listing.imagePath}" th:alt="${listing.title}">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" th:text="${submitLabel}">Публикувай</button>
+            <a th:if="${editMode}" th:href="@{/my-listings}">Отказ</a>
+        </div>
+    </form>
+</main>
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
+<script th:inline="javascript">
+    const districtCenters = /*[[${districtMapCenters}]]*/ [];
+    const sofiaCenter = [42.6977, 23.3219];
+    const sofiaBounds = {
+        minLatitude: 42.55,
+        maxLatitude: 42.85,
+        minLongitude: 23.05,
+        maxLongitude: 23.65
+    };
+
+    function parseCoordinate(value) {
+        if (value === null || String(value).trim() === "") {
+            return null;
+        }
+        const number = Number(value);
+        return Number.isFinite(number) ? number : null;
+    }
+
+    function formatCoordinate(value) {
+        return Number(value).toFixed(6);
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+    }
+
+    function initializeListingFormMap() {
+        const mapElement = document.getElementById("listing-form-map");
+        const districtSelect = document.getElementById("district");
+        const latitudeInput = document.getElementById("latitude");
+        const longitudeInput = document.getElementById("longitude");
+        const geometryInput = document.getElementById("geometryGeoJson");
+        const coordinatePreview = document.getElementById("coordinate-preview");
+        const useDistrictCenterButton = document.getElementById("use-district-center");
+        const clearCoordinatesButton = document.getElementById("clear-coordinates");
+
+        if (!mapElement || !window.L || !latitudeInput || !longitudeInput || !geometryInput) {
+            return;
+        }
+
+        function findDistrictCenter() {
+            if (!districtSelect || !districtSelect.value) {
+                return null;
+            }
+            return districtCenters.find((center) => center.code === districtSelect.value) || null;
+        }
+
+        function previewCenter() {
+            const selectedCenter = findDistrictCenter();
+            if (!selectedCenter) {
+                return {
+                    displayName: "София",
+                    latitude: sofiaCenter[0],
+                    longitude: sofiaCenter[1]
+                };
+            }
+            return {
+                displayName: selectedCenter.displayName,
+                latitude: Number(selectedCenter.latitude),
+                longitude: Number(selectedCenter.longitude)
+            };
+        }
+
+        function hasSavedCoordinates() {
+            return parseCoordinate(latitudeInput.value) !== null && parseCoordinate(longitudeInput.value) !== null;
+        }
+
+        function rectangleGeoJson(latitude, longitude) {
+            const south = clamp(latitude - 0.00012, sofiaBounds.minLatitude, sofiaBounds.maxLatitude);
+            const north = clamp(latitude + 0.00012, sofiaBounds.minLatitude, sofiaBounds.maxLatitude);
+            const west = clamp(longitude - 0.00018, sofiaBounds.minLongitude, sofiaBounds.maxLongitude);
+            const east = clamp(longitude + 0.00018, sofiaBounds.minLongitude, sofiaBounds.maxLongitude);
+            const coordinates = [
+                [west, south],
+                [east, south],
+                [east, north],
+                [west, north],
+                [west, south]
+            ];
+            return JSON.stringify({
+                type: "Polygon",
+                coordinates: [coordinates]
+            });
+        }
+
+        function parsedGeometryCenter() {
+            if (!geometryInput.value) {
+                return null;
+            }
+            try {
+                const root = JSON.parse(geometryInput.value);
+                const geometry = root.type === "Feature" ? root.geometry : root;
+                if (!geometry || geometry.type !== "Polygon" || !Array.isArray(geometry.coordinates)) {
+                    return null;
+                }
+                const ring = geometry.coordinates[0] || [];
+                const points = ring.length > 1
+                    && ring[0][0] === ring[ring.length - 1][0]
+                    && ring[0][1] === ring[ring.length - 1][1]
+                    ? ring.slice(0, -1)
+                    : ring;
+                if (points.length < 3) {
+                    return null;
+                }
+                const sums = points.reduce((total, point) => {
+                    return {
+                        latitude: total.latitude + Number(point[1]),
+                        longitude: total.longitude + Number(point[0])
+                    };
+                }, {latitude: 0, longitude: 0});
+                return {
+                    latitude: sums.latitude / points.length,
+                    longitude: sums.longitude / points.length
+                };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        const geometryCenter = parsedGeometryCenter();
+        const savedLatitude = parseCoordinate(latitudeInput.value) ?? geometryCenter?.latitude;
+        const savedLongitude = parseCoordinate(longitudeInput.value) ?? geometryCenter?.longitude;
+        const center = previewCenter();
+        const startLatitude = savedLatitude ?? center.latitude;
+        const startLongitude = savedLongitude ?? center.longitude;
+
+        const map = L.map(mapElement, {
+            scrollWheelZoom: false,
+            maxBounds: L.latLngBounds([
+                [sofiaBounds.minLatitude, sofiaBounds.minLongitude],
+                [sofiaBounds.maxLatitude, sofiaBounds.maxLongitude]
+            ]).pad(0.35),
+            maxBoundsViscosity: 0.82
+        }).setView([startLatitude, startLongitude], hasSavedCoordinates() ? 16 : 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let shapeLayer = null;
+        const marker = L.marker([startLatitude, startLongitude], {
+            draggable: true,
+            icon: L.divIcon({
+                className: "",
+                html: '<span class="map-pin map-pin-available" style="--pin-color: #1f7a5b"></span>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            })
+        }).addTo(map);
+
+        function drawShape(geoJson) {
+            if (shapeLayer) {
+                map.removeLayer(shapeLayer);
+            }
+            try {
+                shapeLayer = L.geoJSON(JSON.parse(geoJson), {
+                    style: {
+                        color: "#1f7a5b",
+                        weight: 2,
+                        fillColor: "#1f7a5b",
+                        fillOpacity: 0.22
+                    }
+                }).addTo(map);
+            } catch (error) {
+                shapeLayer = null;
+            }
+        }
+
+        function setGeometry(latitude, longitude, forceRectangle) {
+            if (!geometryInput.value || forceRectangle) {
+                geometryInput.value = rectangleGeoJson(latitude, longitude);
+            }
+            drawShape(geometryInput.value);
+        }
+
+        function updatePreview() {
+            if (!coordinatePreview) {
+                return;
+            }
+            if (hasSavedCoordinates()) {
+                coordinatePreview.textContent = "Точна позиция: "
+                    + formatCoordinate(latitudeInput.value)
+                    + ", "
+                    + formatCoordinate(longitudeInput.value);
+                return;
+            }
+            coordinatePreview.textContent = "Маркерът ще се запише в района: " + previewCenter().displayName;
+        }
+
+        function moveMarker(latitude, longitude, saveCoordinates, zoom) {
+            marker.setLatLng([latitude, longitude]);
+            map.setView([latitude, longitude], zoom ?? map.getZoom());
+            if (saveCoordinates) {
+                latitudeInput.value = formatCoordinate(latitude);
+                longitudeInput.value = formatCoordinate(longitude);
+            }
+            setGeometry(latitude, longitude, true);
+            updatePreview();
+        }
+
+        map.on("click", (event) => {
+            moveMarker(event.latlng.lat, event.latlng.lng, true, Math.max(map.getZoom(), 15));
+        });
+
+        marker.on("dragend", () => {
+            const position = marker.getLatLng();
+            moveMarker(position.lat, position.lng, true);
+        });
+
+        if (districtSelect) {
+            districtSelect.addEventListener("change", () => {
+                if (!hasSavedCoordinates()) {
+                    const nextCenter = previewCenter();
+                    moveMarker(nextCenter.latitude, nextCenter.longitude, false, 13);
+                } else {
+                    setGeometry(marker.getLatLng().lat, marker.getLatLng().lng, false);
+                    updatePreview();
+                }
+            });
+        }
+
+        if (useDistrictCenterButton) {
+            useDistrictCenterButton.addEventListener("click", () => {
+                const nextCenter = previewCenter();
+                moveMarker(nextCenter.latitude, nextCenter.longitude, true, 15);
+            });
+        }
+
+        if (clearCoordinatesButton) {
+            clearCoordinatesButton.addEventListener("click", () => {
+                latitudeInput.value = "";
+                longitudeInput.value = "";
+                const nextCenter = previewCenter();
+                moveMarker(nextCenter.latitude, nextCenter.longitude, false, 13);
+            });
+        }
+
+        latitudeInput.addEventListener("change", () => {
+            const latitude = parseCoordinate(latitudeInput.value);
+            const longitude = parseCoordinate(longitudeInput.value);
+            if (latitude !== null && longitude !== null) {
+                moveMarker(latitude, longitude, false, 15);
+            } else {
+                updatePreview();
+            }
+        });
+
+        longitudeInput.addEventListener("change", () => {
+            const latitude = parseCoordinate(latitudeInput.value);
+            const longitude = parseCoordinate(longitudeInput.value);
+            if (latitude !== null && longitude !== null) {
+                moveMarker(latitude, longitude, false, 15);
+            } else {
+                updatePreview();
+            }
+        });
+
+        setGeometry(startLatitude, startLongitude, false);
+        updatePreview();
+    }
+
+    initializeListingFormMap();
+</script>
+</body>
+</html>

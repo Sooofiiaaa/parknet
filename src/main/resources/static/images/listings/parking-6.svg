@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Small secure garage">
+  <rect width="960" height="540" fill="#e8f0ec"/>
+  <rect y="342" width="960" height="198" fill="#c4cec8"/>
+  <path d="M144 320h672l-54-150H198z" fill="#2d3d35"/>
+  <rect x="190" y="214" width="580" height="142" rx="12" fill="#fbfdfc"/>
+  <rect x="270" y="248" width="168" height="108" rx="8" fill="#d8e2dd"/>
+  <rect x="522" y="248" width="168" height="108" rx="8" fill="#d8e2dd"/>
+  <rect x="340" y="330" width="280" height="112" rx="32" fill="#5f6f2a"/>
+  <circle cx="400" cy="444" r="24" fill="#151b18"/>
+  <circle cx="560" cy="444" r="24" fill="#151b18"/>
+  <rect x="386" y="356" width="188" height="38" rx="10" fill="#ececff"/>
+  <path d="M184 426h592" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-dasharray="74 50"/>
+</svg>

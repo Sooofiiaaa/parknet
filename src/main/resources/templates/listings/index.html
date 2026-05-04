@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_parameter" th:content="${_csrf.parameterName}">
+    <title>ParkNet | Карта на паркоместа в София</title>
+    <link rel="stylesheet" th:href="@{/vendor/leaflet/leaflet.css}">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/map.css}">
+</head>
+<body class="map-body">
+<main class="parknet-map-app" aria-label="Карта на паркоместа в София">
+    <div id="sofia-map" class="map-canvas" aria-label="Интерактивна карта на паркоместата в София"></div>
+
+    <nav class="map-command-dock" aria-label="Основни инструменти">
+        <a class="dock-brand" th:href="@{/}" aria-label="ParkNet начало" title="ParkNet">
+            <span class="parknet-logo" aria-hidden="true"></span>
+            <span class="dock-brand-text">ParkNet</span>
+        </a>
+
+        <span class="dock-divider" aria-hidden="true"></span>
+
+        <button class="dock-button" type="button" data-panel-toggle="filters" aria-controls="map-filter-panel" aria-expanded="false" aria-label="Филтри" title="Филтри">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 6h14"/>
+                <path d="M5 12h14"/>
+                <path d="M5 18h14"/>
+                <circle cx="8" cy="6" r="2"/>
+                <circle cx="14" cy="12" r="2"/>
+                <circle cx="10" cy="18" r="2"/>
+            </svg>
+        </button>
+        <button class="dock-button" type="button" data-panel-toggle="neighborhoods" aria-controls="neighborhood-panel" aria-expanded="false" aria-label="Избор на квартал" title="Избор на квартал">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 20V6l5-2 5 2 4-2v14l-4 2-5-2-5 2z"/>
+                <path d="M10 4v14"/>
+                <path d="M15 6v14"/>
+            </svg>
+        </button>
+        <button class="dock-button dock-results-button" type="button" data-panel-toggle="results" aria-controls="results-panel" aria-expanded="false" aria-label="Резултати" title="Резултати">
+            <span class="dock-count" data-mini-results-count th:text="${#lists.size(listingMapPoints)}">0</span>
+        </button>
+        <button class="dock-button" type="button" data-panel-toggle="legend" aria-controls="legend-panel" aria-expanded="false" aria-label="Легенда" title="Легенда">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4 21 19H3L12 4z"/>
+                <path d="M12 10v4"/>
+                <path d="M12 17h.01"/>
+            </svg>
+        </button>
+        <button class="dock-button" type="button" data-panel-toggle="tools" aria-controls="tools-panel" aria-expanded="false" aria-label="Инструменти" title="Инструменти">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="7"/>
+                <path d="M12 2v3"/>
+                <path d="M12 19v3"/>
+                <path d="M2 12h3"/>
+                <path d="M19 12h3"/>
+                <circle cx="12" cy="12" r="2"/>
+            </svg>
+        </button>
+
+        <span class="dock-divider" aria-hidden="true"></span>
+
+        <button class="dock-button dock-button-primary"
+                type="button"
+                data-map-create-button
+                th:attr="data-authenticated=${isAuthenticated},data-login-url=@{/login}"
+                aria-label="Добави паркомясто"
+                title="Добави паркомясто">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14"/>
+                <path d="M5 12h14"/>
+            </svg>
+        </button>
+        <button class="dock-button" type="button" data-panel-toggle="account" aria-controls="account-panel" aria-expanded="false" aria-label="Профил" title="Профил">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M5 21a7 7 0 0 1 14 0"/>
+            </svg>
+        </button>
+    </nav>
+
+    <aside class="map-onboarding-hint" data-onboarding-hint aria-live="polite">
+        <span>Изберете квартал или приближете картата, за да видите свободни паркоместа.</span>
+        <button type="button" data-onboarding-close aria-label="Скрий подсказката">Разбрах</button>
+    </aside>
+
+    <section id="account-panel" class="map-account-panel map-utility-panel" data-map-panel="account" aria-label="Профил и навигация">
+        <div class="panel-heading-row">
+            <div>
+                <p class="map-kicker">ParkNet</p>
+                <h2 th:text="${isAuthenticated ? 'Профил' : 'Вход в профил'}">Профил</h2>
+            </div>
+            <button class="panel-icon-button" type="button" data-panel-close aria-label="Затвори">Затвори</button>
+        </div>
+        <div class="account-action-list">
+            <a th:if="${isAuthenticated}" th:href="@{/my-listings}">Моите обяви</a>
+            <a th:if="${isAuthenticated}" th:href="@{/my-reservations}">Резервации</a>
+            <a th:if="${isAuthenticated}" th:href="@{/reservation-requests}">Заявки</a>
+            <a th:unless="${isAuthenticated}" th:href="@{/login}">Вход</a>
+            <a th:unless="${isAuthenticated}" th:href="@{/register}">Регистрация</a>
+            <form class="map-logout-form" th:if="${isAuthenticated}" th:action="@{/logout}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit">Изход</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="map-filter-panel" class="map-filter-card map-utility-panel" data-map-panel="filters" aria-label="Филтри за търсене">
+        <div class="panel-heading-row">
+            <div>
+                <p class="map-kicker">Филтри</p>
+                <h1>Намери място на картата</h1>
+            </div>
+            <div class="panel-heading-actions">
+                <button class="panel-icon-button" type="button" data-panel-close data-filter-close aria-label="Затвори филтрите">
+                    Затвори
+                </button>
+            </div>
+        </div>
+
+        <div class="map-result-count compact-count" aria-live="polite">
+            <strong data-map-count-number th:text="${#lists.size(listings)}">0</strong>
+            <span data-map-count-label th:text="${#lists.size(listings) == 1 ? 'намерено място' : 'намерени места'}">намерени места</span>
+        </div>
+
+        <div class="map-filter-body">
+            <form th:action="@{/listings}" th:object="${filter}" method="get" class="map-filter-form" data-map-filter-form>
+                <label>
+                    <span>Избор на квартал</span>
+                    <select th:field="*{district}" data-district-select>
+                        <option value="">Всички квартали</option>
+                        <option th:each="district : ${districts}"
+                                th:value="${district}"
+                                th:text="${district.displayName}">
+                            Квартал
+                        </option>
+                    </select>
+                </label>
+
+                <div class="filter-date-grid">
+                    <label>
+                        <span>Дата от</span>
+                        <input type="date" th:field="*{dateFrom}">
+                        <span class="field-error" th:if="${#fields.hasErrors('dateFrom')}" th:errors="*{dateFrom}"></span>
+                    </label>
+                    <label>
+                        <span>Дата до</span>
+                        <input type="date" th:field="*{dateTo}">
+                        <span class="field-error" th:if="${#fields.hasErrors('dateTo')}" th:errors="*{dateTo}"></span>
+                    </label>
+                </div>
+
+                <label>
+                    <span>Цена на час</span>
+                    <input type="number" min="0" step="0.01" th:field="*{maxPrice}" placeholder="до 4€">
+                    <span class="field-error" th:if="${#fields.hasErrors('maxPrice')}" th:errors="*{maxPrice}"></span>
+                </label>
+
+                <div class="map-filter-actions">
+                    <button type="submit">Покажи</button>
+                    <a th:href="@{/listings}">Изчисти</a>
+                </div>
+            </form>
+
+            <section class="map-render-controls" aria-label="Настройки на картата">
+                <label>
+                    <span>Оцветяване</span>
+                    <select data-color-mode>
+                        <option value="availability">По наличност</option>
+                        <option value="price">По цена</option>
+                    </select>
+                </label>
+            </section>
+        </div>
+    </section>
+
+    <section id="neighborhood-panel" class="neighborhood-picker-card map-utility-panel" data-map-panel="neighborhoods" aria-label="Избор на квартал">
+        <div class="neighborhood-picker-heading">
+            <div>
+                <p class="map-kicker">Квартал</p>
+                <h2>Избор на квартал</h2>
+            </div>
+            <div class="neighborhood-heading-actions">
+                <span data-neighborhood-summary>Всички квартали</span>
+                <button class="panel-icon-button" type="button" data-panel-close aria-label="Затвори кварталите">Затвори</button>
+            </div>
+        </div>
+        <div class="neighborhood-chip-row" role="listbox" aria-label="Квартали в София">
+            <button type="button" class="neighborhood-chip is-active" data-neighborhood-chip="" role="option" aria-selected="true">Всички квартали</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="CENTER" role="option" aria-selected="false">Център</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="LOZENETS" role="option" aria-selected="false">Лозенец</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="MLADOST" role="option" aria-selected="false">Младост 1</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="STUDENTSKI" role="option" aria-selected="false">Студентски град</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="LYULIN" role="option" aria-selected="false">Люлин</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="OBORISHTE" role="option" aria-selected="false">Оборище</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="KRASNO_SELO" role="option" aria-selected="false">Красно село</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="PODUYANE" role="option" aria-selected="false">Подуяне</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="GEO_MILEV" role="option" aria-selected="false">Гео Милев</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="MANASTIRSKI_LIVADI" role="option" aria-selected="false">Манастирски ливади</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="IVAN_VAZOV" role="option" aria-selected="false">Иван Вазов</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="BOROVO" role="option" aria-selected="false">Борово</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="DIANABAD" role="option" aria-selected="false">Дианабад</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="DRUZHBA" role="option" aria-selected="false">Дружба 1</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="NADEZHDA" role="option" aria-selected="false">Надежда</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="BANISHORA" role="option" aria-selected="false">Банишора</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="OVCHA_KUPEL" role="option" aria-selected="false">Овча купел</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="GOTSE_DELCHEV" role="option" aria-selected="false">Гоце Делчев</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="IZTOK" role="option" aria-selected="false">Изток</button>
+            <button type="button" class="neighborhood-chip" data-neighborhood-chip="SVETA_TROITSA" role="option" aria-selected="false">Света Троица</button>
+        </div>
+    </section>
+
+    <section class="map-drawing-panel" data-drawing-panel hidden aria-live="polite">
+        <div>
+            <p class="map-kicker" data-drawing-kicker>Ново място</p>
+            <h2 data-drawing-title>Очертайте границите на вашето паркомясто върху картата.</h2>
+            <p data-drawing-help>Очертайте мястото върху картата. След това попълнете данните за обявата.</p>
+            <strong data-drawing-status>0 точки избрани</strong>
+        </div>
+        <div class="drawing-actions">
+            <button type="button" data-drawing-finish disabled>Готово</button>
+            <button type="button" data-drawing-save hidden>Запази граници</button>
+            <button type="button" data-drawing-rectangle>Малък правоъгълник тук</button>
+            <button type="button" data-drawing-redraw hidden>Начертай отново</button>
+            <button type="button" data-drawing-cancel>Отказ</button>
+        </div>
+    </section>
+
+    <aside class="listing-create-panel" data-create-panel hidden aria-label="Добавяне на паркомясто">
+        <form class="map-create-form" data-create-form th:action="@{/api/listings/map}" method="post" enctype="multipart/form-data" novalidate>
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="geometryGeoJson" data-create-geometry>
+            <input type="hidden" name="currency" value="€">
+            <input type="hidden" name="mapColorModeOverride" value="">
+            <input type="hidden" name="pricingType" value="HOURLY">
+
+            <div class="panel-heading-row">
+                <div>
+                    <p class="map-kicker">Ново място</p>
+                    <h2>Данни за паркомястото</h2>
+                </div>
+                <button class="panel-icon-button" type="button" data-create-close aria-label="Затвори формата">
+                    Затвори
+                </button>
+            </div>
+
+            <p class="create-error-box" data-create-error hidden></p>
+
+            <label>
+                <span>Заглавие</span>
+                <input type="text" name="title" maxlength="120" required placeholder="Гараж до НДК">
+            </label>
+
+            <label>
+                <span>Описание</span>
+                <textarea name="description" rows="4" maxlength="1000" required placeholder="Опишете достъпа, размера и особеностите на мястото."></textarea>
+            </label>
+
+            <div class="create-two-column">
+                <label>
+                    <span>Квартал</span>
+                    <select name="district" data-create-district required>
+                        <option value="">Избери квартал</option>
+                        <option th:each="district : ${districts}"
+                                th:value="${district}"
+                                th:text="${district.displayName}">
+                            Квартал
+                        </option>
+                    </select>
+                </label>
+                <label>
+                    <span>Цена на час</span>
+                    <input type="number" name="pricePerHour" min="0" step="0.01" required placeholder="2.00">
+                </label>
+            </div>
+
+            <label>
+                <span>Адрес</span>
+                <input type="text" name="address" maxlength="220" required placeholder="ул. Примерна 12, София">
+            </label>
+
+            <div class="create-two-column">
+                <label>
+                    <span>Достъпно от</span>
+                    <input type="date" name="availableFrom" th:value="${today}" required>
+                </label>
+                <label>
+                    <span>Достъпно до</span>
+                    <input type="date" name="availableTo" th:value="${today.plusDays(30)}" required>
+                </label>
+            </div>
+
+            <label>
+                <span>Телефон</span>
+                <input type="text" name="phone" maxlength="40" required placeholder="+359 88 123 4567">
+            </label>
+
+            <details class="create-advanced-details">
+                <summary>Детайли, отстъпка и снимка</summary>
+                <label>
+                    <span>Дневна цена с отстъпка</span>
+                    <input type="number" name="pricePerDay" min="0" step="0.01" placeholder="16.00">
+                </label>
+                <label>
+                    <span>Снимка</span>
+                    <input type="file" name="imageFile" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                </label>
+            </details>
+
+            <div class="create-form-actions">
+                <button type="submit" data-create-submit>Публикувай</button>
+                <button type="button" data-create-redraw>Очертай отново</button>
+                <button type="button" data-create-cancel>Отказ</button>
+            </div>
+        </form>
+    </aside>
+
+    <aside class="listing-preview-panel" data-preview-panel aria-label="Преглед на паркомясто" aria-live="polite">
+        <div class="preview-panel-shell">
+            <div class="preview-drag-handle" aria-hidden="true"></div>
+            <div class="panel-heading-row">
+                <div>
+                    <p class="map-kicker">Избрано място</p>
+                    <h2 data-preview-title>Избери място от картата</h2>
+                </div>
+                <div class="preview-heading-actions">
+                    <button class="panel-icon-button preview-back-button" type="button" data-preview-back hidden aria-label="Назад към резултатите">
+                        Резултати
+                    </button>
+                    <button class="panel-icon-button" type="button" data-preview-close aria-label="Затвори прегледа">
+                        Затвори
+                    </button>
+                </div>
+            </div>
+
+            <div class="preview-empty-state" data-preview-empty>
+                <p data-preview-message>
+                    Натисни върху очертание, маркер или място от списъка, за да видиш цена, адрес и действия.
+                </p>
+
+                <div class="preview-list" data-preview-list aria-label="Намерени места">
+                    <button type="button" class="preview-list-button" th:each="point : ${listingMapPoints}" th:attr="data-select-listing-id=${point.id}">
+                        <span>
+                            <strong th:text="${point.title}">Паркомясто</strong>
+                            <small th:text="${point.districtName + ' · ' + point.address}">Квартал · Адрес</small>
+                        </span>
+                        <b th:text="${point.displayRateLabel}">0€</b>
+                    </button>
+                </div>
+            </div>
+
+            <div class="preview-content" data-preview-content hidden>
+                <div class="preview-image" data-preview-image-wrap hidden>
+                    <img data-preview-image src="" alt="">
+                </div>
+                <p class="preview-owner-note" data-preview-owner-note hidden>Това е ваша обява</p>
+                <div class="preview-status-row">
+                    <span class="preview-status-pill" data-preview-status>Свободно</span>
+                    <strong data-preview-price>0€</strong>
+                </div>
+                <div class="preview-price-details" data-preview-price-details hidden>
+                    <span data-preview-hourly-detail></span>
+                    <span data-preview-daily-detail></span>
+                </div>
+                <p class="preview-description" data-preview-description></p>
+                <dl class="preview-facts">
+                    <div>
+                        <dt>Квартал</dt>
+                        <dd data-preview-district></dd>
+                    </div>
+                    <div>
+                        <dt>Адрес</dt>
+                        <dd data-preview-address></dd>
+                    </div>
+                    <div>
+                        <dt>Налично от</dt>
+                        <dd data-preview-from></dd>
+                    </div>
+                    <div>
+                        <dt>Налично до</dt>
+                        <dd data-preview-to></dd>
+                    </div>
+                </dl>
+                <div class="preview-actions">
+                    <a class="preview-primary-action" data-preview-details href="#">Виж детайли</a>
+                    <a class="preview-secondary-action" data-preview-reserve href="#">Резервирай</a>
+                    <button class="preview-secondary-action" type="button" data-preview-edit-boundary hidden>Редактирай граници</button>
+                    <a class="preview-secondary-action" data-preview-edit href="#" hidden>Редактирай</a>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <section id="results-panel" class="map-results-card map-utility-panel" data-map-panel="results" data-mini-results-card aria-label="Резултати">
+        <div class="panel-heading-row">
+            <div>
+                <p class="map-kicker">Списък</p>
+                <h2>Резултати</h2>
+            </div>
+            <button class="panel-icon-button" type="button" data-panel-close aria-label="Затвори резултатите">Затвори</button>
+        </div>
+        <div class="mini-results-list" data-mini-results-list aria-label="Видими резултати">
+            <button type="button" class="mini-result-card" th:each="point : ${listingMapPoints}" th:attr="data-select-listing-id=${point.id}">
+                <span>
+                    <strong th:text="${point.title}">Паркомясто</strong>
+                    <small th:text="${point.districtName + ' · ' + point.address}">Квартал · Адрес</small>
+                </span>
+                <b th:text="${point.displayRateLabel}">0€</b>
+            </button>
+        </div>
+    </section>
+
+    <section id="legend-panel" class="map-legend-card map-utility-panel" data-map-panel="legend" data-map-legend aria-label="Легенда">
+        <div class="panel-heading-row">
+            <div>
+                <p class="map-kicker">Цветове</p>
+                <h2>Легенда</h2>
+            </div>
+            <button class="panel-icon-button" type="button" data-panel-close aria-label="Затвори легендата">Затвори</button>
+        </div>
+        <div class="legend-items" data-legend-items aria-label="Легенда на картата">
+            <span><i class="legend-dot legend-dot-available"></i>Свободно</span>
+            <span><i class="legend-dot legend-dot-requested"></i>Заявено</span>
+            <span><i class="legend-dot legend-dot-booked"></i>Заето</span>
+            <span><i class="legend-dot legend-dot-unavailable"></i>Недостъпно</span>
+            <span><i class="legend-dot legend-dot-owned"></i>Моите обяви</span>
+        </div>
+        <p class="legend-help" data-legend-help>2€ = цена на час. Дневните отстъпки са в детайлите.</p>
+    </section>
+
+    <section id="tools-panel" class="map-toolbox map-utility-panel" data-map-panel="tools" aria-label="Инструменти за картата">
+        <div class="panel-heading-row">
+            <div>
+                <p class="map-kicker">Навигация</p>
+                <h2>Инструменти</h2>
+            </div>
+            <button class="panel-icon-button" type="button" data-panel-close aria-label="Затвори инструментите">Затвори</button>
+        </div>
+        <button type="button" data-map-fit-results>Покажи резултатите</button>
+        <button type="button" data-map-locate>Моето местоположение</button>
+        <button type="button" data-map-clear>Изчисти избора</button>
+    </section>
+
+    <div class="map-empty-overlay" th:hidden="${!#lists.isEmpty(listingMapPoints)}">
+        <h2>Няма намерени места по тези филтри.</h2>
+        <p>Изчисти филтрите или покажи всички квартали, за да продължиш търсенето.</p>
+        <div class="empty-actions">
+            <button type="button" data-clear-filters>Изчисти филтрите</button>
+            <button type="button" data-show-all-districts>Покажи всички квартали</button>
+        </div>
+    </div>
+
+    <div class="map-toast" data-map-toast hidden role="status" aria-live="polite"></div>
+</main>
+
+<script th:src="@{/vendor/leaflet/leaflet.js}"></script>
+<script th:inline="javascript">
+    window.ParkNetMapData = {
+        listings: /*[[${listingMapPoints}]]*/ [],
+        districtCenters: /*[[${districtMapCenters}]]*/ [],
+        sofiaCenter: [42.6977, 23.3219],
+        authenticated: /*[[${isAuthenticated}]]*/ false,
+        loginUrl: /*[[@{/login}]]*/ "/login",
+        createListingUrl: /*[[@{/api/listings/map}]]*/ "/api/listings/map",
+        csrfParameterName: /*[[${_csrf.parameterName}]]*/ "_csrf",
+        csrfToken: /*[[${_csrf.token}]]*/ ""
+    };
+</script>
+<script th:src="@{/js/map.js}"></script>
+</body>
+</html>
